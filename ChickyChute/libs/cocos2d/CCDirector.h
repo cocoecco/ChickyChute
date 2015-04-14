@@ -195,6 +195,9 @@ and when to execute the Scenes.
 
 // Window size
 
+- (UIImage*) screenshotUIImage;
+
+
 /** returns the size of the OpenGL view in points.
  It takes into account any possible rotation (device orientation) of the window
  */

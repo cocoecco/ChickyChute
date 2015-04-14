@@ -10,10 +10,14 @@
 
 #import "AppDelegate.h"
 #import "GameConfig.h"
-#import "HelloWorldLayer.h"
+#import "ScreenWelcome.h"
 #import "RootViewController.h"
+#import "ScreenGameOver.h"
+
 
 @implementation AppDelegate
+@synthesize facebook;
+
 
 @synthesize window;
 
@@ -38,6 +42,10 @@
 	
 #endif // GAME_AUTOROTATION == kGameAutorotationUIViewController	
 }
+
+
+
+
 - (void) applicationDidFinishLaunching:(UIApplication*)application
 {
 	// Init the window
@@ -89,7 +97,7 @@
 #endif
 	
 	[director setAnimationInterval:1.0/60];
-	[director setDisplayFPS:YES];
+	[director setDisplayFPS:NO];
 	
 	
 	// make the OpenGLView a child of the view controller
@@ -108,10 +116,79 @@
 	
 	// Removes the startup flicker
 	[self removeStartupFlicker];
-	
+    playFile = [[SimpleAudioEngine alloc] init];
+    [playFile preloadEffect:@"Tap.wav"];
+    [playFile preloadEffect:@"Ching.wav"];
+    [playFile preloadEffect:@"Boom.wav"];
+    [playFile preloadBackgroundMusic:@"MainLoop.mp3"];
+    [playFile preloadEffect:@"End.mp3"];
+    [playFile preloadBackgroundMusic:@"EndLoop.mp3"];
+    
+    //[[SimpleAudioEngine sharedEngine] setBackgroundMusicVolume:0.5f];
+    [SimpleAudioEngine sharedEngine].backgroundMusicVolume = 0.2;
+    [SimpleAudioEngine sharedEngine].effectsVolume = 0.2;
+
+    
+    
+//    [playFile preloadEffect:@"Happy.mp3"];
+    
 	// Run the intro Scene
-	[[CCDirector sharedDirector] runWithScene: [HelloWorldLayer scene]];
+	[[CCDirector sharedDirector] runWithScene: [ScreenWelcome scene]];
+    
 }
+
+//------------------------------------------------
+
+
+- (void)request:(FBRequest *)request didFailWithError:(NSError *)error {
+    NSLog(@"%@", [error localizedDescription]);
+    NSLog(@"Err details: %@", [error description]);
+    
+    UIAlertView *message = [[UIAlertView alloc] initWithTitle:@"Facebook Post"
+                                                      message:@"MSG"
+                                                     delegate:nil
+                                            cancelButtonTitle:@"OK"
+                                            otherButtonTitles:nil, nil];
+    [message setMessage:@"Error posting to wall"];
+    [message show];
+}
+
+- (void)request:(FBRequest *)request didReceiveResponse:(NSURLResponse *)response {
+}
+
+-(void) request:(FBRequest *)request didLoad:(id)result {
+    UIView* view = [[CCDirector sharedDirector] openGLView];
+    
+    UIAlertView *topScore = [[UIAlertView alloc] initWithTitle: @"Facebook Post" message: @"Your score is now posted on your facebook account." delegate: self cancelButtonTitle: @"Great!" otherButtonTitles: nil, nil];
+    [view addSubview: topScore];
+    [topScore show];
+}
+
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url
+  sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    return [facebook handleOpenURL:url]; 
+}
+
+- (void)fbDidLogin {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:[facebook accessToken] forKey:@"FBAccessTokenKey"];
+    [defaults setObject:[facebook expirationDate] forKey:@"FBExpirationDateKey"];
+    [defaults synchronize];
+    
+}
+
+- (void) fbDidLogout {
+    // Remove saved authorization information if it exists
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([defaults objectForKey:@"FBAccessTokenKey"]) {
+        [defaults removeObjectForKey:@"FBAccessTokenKey"];
+        [defaults removeObjectForKey:@"FBExpirationDateKey"];
+        [defaults synchronize];
+    }
+}
+
+//------------------------------------------------
 
 
 - (void)applicationWillResignActive:(UIApplication *)application {
